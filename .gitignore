@@ -1,3 +1,4 @@
+### lua
 # Compiled Lua sources
 luac.out
 
@@ -39,3 +40,12 @@ luac.out
 *.x86_64
 *.hex
 
+### direnv
+.direnv
+.envrc
+
+### nix
+result
+
+### pre-commit
+.pre-commit-config.yaml
