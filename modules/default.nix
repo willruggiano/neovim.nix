@@ -1,16 +1,35 @@
 {
-  self,
+  config,
   lib,
   flake-parts-lib,
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
   inherit (lib) mkOption types;
+
   mkNeovimEnv = {
     config,
     pkgs,
     ...
   }: let
+    # rtp = pkgs.buildEnv {
+    #   name = "neovim-rtp";
+    #   paths = config.vim.opt.runtimepath;
+    # };
+    init-lua = pkgs.writeTextFile {
+      name = "init.lua";
+      text = ''
+        -- Generate by Nix (via github:willruggiano/neovim.nix)
+        local rtp = vim.opt.runtimepath
+
+
+        -- TODO: This might be a nicer interface?
+        -- require("neovim-nix").setup {...}
+        -- But for now...
+        require "neovim-nix.options"
+      '';
+    };
+
     wrapper = pkgs.writeTextFile rec {
       name = "nvim";
       executable = true;
@@ -23,7 +42,7 @@
           set -o pipefail
         ''
         + ''
-          ${config.neovim.package}/bin/nvim --clean -u ${config.neovim.out.initLua} "$@"
+          ${config.neovim.package}/bin/nvim --clean -u ${init-lua} "$@"
         '';
 
       checkPhase = ''
@@ -32,13 +51,12 @@
         ${pkgs.shellcheck}/bin/shellcheck "$target"
         runHook postCheck
       '';
-
-      meta.mainprogram = name;
     };
   in
     pkgs.buildEnv {
       name = "neovim-env";
       paths = [wrapper];
+      meta.mainProgram = "nvim";
     };
 in {
   imports = [
@@ -57,7 +75,7 @@ in {
     }: {
       options = {
         neovim = {
-          env = mkOption {
+          final = mkOption {
             type = types.package;
             description = "The final Neovim derivation, with all user configuration baked in";
           };
@@ -73,7 +91,9 @@ in {
       pkgs,
       ...
     }: {
-      neovim.env = mkNeovimEnv {inherit config pkgs;};
+      neovim = {
+        final = mkNeovimEnv {inherit config pkgs;};
+      };
     };
   };
 }

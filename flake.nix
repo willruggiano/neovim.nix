@@ -16,7 +16,6 @@
       ];
 
       flake = {
-        lib = import ./lib {inherit (inputs.nixpkgs) lib;};
         flakeModule = {
           imports = [./modules];
         };

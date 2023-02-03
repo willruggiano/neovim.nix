@@ -1,35 +1,27 @@
 {
-  self,
+  config,
   lib,
   flake-parts-lib,
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) mkOption mkPackageOption types;
+  inherit (lib) mkOption types;
 in {
   options = {
-    perSystem = mkPerSystemOption ({
-      config,
-      self',
-      inputs',
-      pkgs,
-      system,
-      ...
-    }: {
+    vim.opt = {
+      # TODO: We will probably want to generate these at some point.
+      grepprg = mkOption {
+        type = types.str;
+        description = "vim.opt.grepprg";
+      };
+    };
+
+    perSystem = mkPerSystemOption (_: {
       options = {
-        neovim = {
-          package = mkPackageOption pkgs "neovim" {};
-
-          options = {
-            grepprg = mkOption {
-              type = types.str;
-              description = "vim.opt.grepprg";
-            };
-
-            out = mkOption {
-              internal = true;
-              type = types.package;
-            };
+        neovim.build = {
+          vimOptions = mkOption {
+            internal = true;
+            type = types.package;
           };
         };
       };
@@ -37,19 +29,26 @@ in {
   };
 
   config = {
-    perSystem = {
-      config,
-      self',
-      inputs',
-      pkgs,
-      ...
-    }: {
-      neovim.options.out = pkgs.writeTextFile {
-        name = "options.lua";
-        text = ''
-          vim.opt.grepprg = "${config.neovim.options.grepprg}"
+    perSystem = {pkgs, ...}: {
+      neovim.build.vimOptions = let
+        mod = pkgs.writeText "options.lua" ''
+          vim.opt.grepprg = "${config.vim.opt.grepprg}"
         '';
-      };
+      in
+        pkgs.stdenvNoCC.mkDerivation {
+          name = "neovim-options";
+
+          dontUnpack = true;
+          dontConfigure = true;
+          dontBuild = true;
+
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out/lua/neovim-nix
+            ln -s ${mod} $out/lua/neovim-nix/options.lua
+            runHook postInstall
+          '';
+        };
     };
   };
 }
