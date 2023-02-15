@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   flake-parts-lib,
   ...
@@ -12,7 +11,11 @@ in {
   ];
 
   options = {
-    perSystem = mkPerSystemOption ({inputs', ...}: {
+    perSystem = mkPerSystemOption ({
+      inputs',
+      config,
+      ...
+    }: {
       options = {
         neovim = {
           package = mkOption {
@@ -20,23 +23,21 @@ in {
             description = "The Neovim derivation to use";
             inherit (inputs'.neovim.packages) default;
           };
-        };
 
-        vim.opt = {
-          runtimepath = mkOption {
-            internal = true;
-            type = types.listOf types.package;
+          build = {
+            runtimepath = mkOption {
+              internal = true;
+              type = types.listOf types.package;
+            };
           };
         };
       };
-    });
-  };
 
-  config = {
-    perSystem = {config, ...}: {
-      vim.opt.runtimepath = [
-        config.neovim.build.vimOptions
-      ];
-    };
+      config = {
+        neovim.build.runtimepath = [
+          config.neovim.build.vimOptions
+        ];
+      };
+    });
   };
 }
