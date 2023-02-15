@@ -50,7 +50,7 @@ in {
 
         # TODO: Generate these.
         vim.g = {
-          mapleader = mkLuaOption str;
+          do_filetype_lua = mkLuaOption bool;
           loaded_2html_plugin = mkLuaOption bool;
           loaded_getscript = mkLuaOption bool;
           loaded_getscriptPlugin = mkLuaOption bool;
@@ -68,6 +68,7 @@ in {
           loaded_vimballPlugin = mkLuaOption bool;
           loaded_zip = mkLuaOption bool;
           loaded_zipPlugin = mkLuaOption bool;
+          mapleader = mkLuaOption str;
         };
       };
 

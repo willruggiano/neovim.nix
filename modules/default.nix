@@ -13,8 +13,7 @@
   }: let
     rtp = pkgs.buildEnv {
       name = "neovim-rtp";
-      # paths = config.neovim.build.runtimepath;
-      paths = [];
+      paths = config.neovim.build.runtimepath;
     };
 
     init-lua = pkgs.writeTextFile {
@@ -27,6 +26,9 @@
         -- Why do we even need a neovim-nix lua module?
         vim.cmd.source "${config.neovim.build.vimOptions}"
         vim.cmd.source "${config.neovim.build.vimGlobals}"
+
+        -- TODO: Is there a lua way to do this?
+        vim.cmd "set packpath^=${config.neovim.build.packpath}"
 
         -- TODO: This might be a nicer interface?
         -- require("neovim-nix").setup {...}
