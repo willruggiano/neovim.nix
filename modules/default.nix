@@ -26,6 +26,7 @@
         -- TODO: This is a super simple approach?
         -- Why do we even need a neovim-nix lua module?
         vim.cmd.source "${config.neovim.build.vimOptions}"
+        vim.cmd.source "${config.neovim.build.vimGlobals}"
 
         -- TODO: This might be a nicer interface?
         -- require("neovim-nix").setup {...}

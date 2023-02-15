@@ -7,6 +7,7 @@
   inherit (lib) mkOption types;
 in {
   imports = [
+    ./globals.nix
     ./options.nix
   ];
 
@@ -28,15 +29,10 @@ in {
             runtimepath = mkOption {
               internal = true;
               type = types.listOf types.package;
+              default = [];
             };
           };
         };
-      };
-
-      config = {
-        neovim.build.runtimepath = [
-          config.neovim.build.vimOptions
-        ];
       };
     });
   };
