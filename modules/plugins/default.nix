@@ -5,6 +5,7 @@
   ...
 }:
 with lib; let
+  inherit (builtins) typeOf;
   inherit (flake-parts-lib) mkPerSystemOption;
   inherit (neovim-lib) toLua;
 
@@ -16,6 +17,7 @@ with lib; let
       };
       name = mkOption {
         type = nullOr str;
+        default = null;
       };
       dependencies = mkOption {
         type = listOf package;
@@ -26,7 +28,7 @@ with lib; let
         default = false;
       };
       config = mkOption {
-        type = bool;
+        type = oneOf [bool path];
         default = false;
       };
       opts = mkOption {
@@ -106,7 +108,11 @@ in {
           lazy = let
             toPlugin = p:
               {
-                inherit (p) dev config name opts;
+                inherit (p) dev opts;
+                config =
+                  if (typeOf p.config) == "path"
+                  then _: ''dofile "${p.config}"''
+                  else p.config;
                 dependencies =
                   map (dep: {
                     name = dep.pname;
@@ -114,10 +120,14 @@ in {
                   })
                   p.dependencies;
               }
-              // optionalAttrs (p.package != null) {dir = "${p.package}";}
+              // optionalAttrs (p.package != null) {
+                dir = "${p.package}";
+                name = p.package.pname;
+              }
               // optionalAttrs (p.event != null) {inherit (p) event;}
               // optionalAttrs (p.ft != null) {inherit (p) ft;}
-              // optionalAttrs (p.keys != null) {inherit (p) keys;};
+              // optionalAttrs (p.keys != null) {inherit (p) keys;}
+              // optionalAttrs (p.name != null) {inherit (p) name;};
             spec = toLua (map toPlugin cfg.plugins);
             opts = toLua (cfg.opts // {performance.rtp.reset = false;});
           in {
