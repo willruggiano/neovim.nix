@@ -9,8 +9,12 @@
     pre-commit-nix.url = "github:cachix/pre-commit-hooks.nix";
   };
 
-  outputs = {flake-parts, ...} @ inputs:
-    flake-parts.lib.mkFlake {inherit inputs;} {
+  outputs = {
+    flake-parts,
+    self,
+    ...
+  } @ inputs:
+    flake-parts.lib.mkFlake {inherit self inputs;} {
       imports = [
         inputs.pre-commit-nix.flakeModule
       ];

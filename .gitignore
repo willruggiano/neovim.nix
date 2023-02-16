@@ -42,7 +42,6 @@ luac.out
 
 ### direnv
 .direnv
-.envrc
 
 ### nix
 result

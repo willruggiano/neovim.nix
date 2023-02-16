@@ -1,38 +1,12 @@
 {
   lib,
   flake-parts-lib,
+  neovim-lib,
   ...
-}:
-with lib; let
-  inherit (builtins) isFunction typeOf;
+}: let
+  inherit (lib) concatStringsSep filterAttrs mapAttrsToList mkOption;
   inherit (flake-parts-lib) mkPerSystemOption;
-
-  mkLuaOption = type:
-    mkOption {
-      type = types.nullOr (types.oneOf [type (types.functionTo type)]);
-      default = null;
-    };
-
-  toLuaHashMap = v: "{ ${concatStringsSep ", " (mapAttrsToList (name: value: "${name} = ${toLua value}") v)} }";
-
-  toLuaArray = v: "{ ${concatMapStringsSep ", " toLua v} }";
-
-  # TODO: Surely there is a better way?
-  toLua = v:
-    if (typeOf v) == "string"
-    then ''"${v}"''
-    else if (typeOf v) == "bool"
-    then
-      if v
-      then "true"
-      else "false"
-    else if (typeOf v) == "set"
-    then toLuaHashMap v
-    else if (typeOf v) == "list"
-    then toLuaArray v
-    else if isFunction v
-    then v {}
-    else toString v;
+  inherit (neovim-lib) mkLuaOption toLua;
 in {
   options = {
     perSystem = mkPerSystemOption ({
