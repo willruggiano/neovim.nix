@@ -41,6 +41,8 @@
 
         formatter = pkgs.alejandra;
 
+        packages.utils = pkgs.callPackage ./utils.nix {};
+
         pre-commit = {
           settings = {
             hooks.alejandra.enable = true;

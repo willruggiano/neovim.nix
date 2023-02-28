@@ -4,7 +4,7 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) mkOption types;
+  inherit (lib) makeBinPath mkOption optionalString types;
 
   mkNeovimEnv = {
     config,
@@ -23,6 +23,9 @@
           set -o nounset
           set -o pipefail
         ''
+        + optionalString (config.neovim.paths != []) ''
+          export PATH="$PATH:${makeBinPath config.neovim.paths}/bin"
+        ''
         + ''
           ${config.neovim.package}/bin/nvim --clean -u ${config.neovim.build.initlua} "$@"
         '';
@@ -33,6 +36,8 @@
         ${pkgs.shellcheck}/bin/shellcheck "$target"
         runHook postCheck
       '';
+
+      meta.mainProgram = name;
     };
   in
     pkgs.buildEnv {
@@ -60,6 +65,12 @@ in {
     }: {
       options = {
         neovim = {
+          paths = mkOption {
+            type = types.listOf types.package;
+            default = [];
+            description = "Additional binaries to bake into the final Neovim derivation's PATH";
+          };
+
           final = mkOption {
             type = types.package;
             description = "The final Neovim derivation, with all user configuration baked in";
