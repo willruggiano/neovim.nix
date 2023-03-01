@@ -12,7 +12,7 @@ with lib; let
   pluginSpec = with types; {
     options = {
       src = mkOption {
-        type = nullOr attrs;
+        type = nullOr (oneOf [attrs path]);
         default = null;
       };
       package = mkOption {
@@ -23,17 +23,17 @@ with lib; let
         type = nullOr str;
         default = null;
       };
+      lazy = mkOption {
+        type = nullOr bool;
+        default = null;
+      };
       dependencies = mkOption {
-        type = listOf package;
+        type = listOf (oneOf [attrs str]);
         default = [];
       };
-      dev = mkOption {
-        type = bool;
-        default = false;
-      };
       config = mkOption {
-        type = oneOf [bool path];
-        default = false;
+        type = nullOr (oneOf [attrs bool path]);
+        default = null;
       };
       opts = mkOption {
         type = attrs;
@@ -49,6 +49,10 @@ with lib; let
       };
       keys = mkOption {
         type = nullOr (oneOf [str (listOf str)]);
+        default = null;
+      };
+      priority = mkOption {
+        type = nullOr int;
         default = null;
       };
     };
@@ -80,8 +84,8 @@ in {
               };
             };
             plugins = mkOption {
-              type = listOf (submodule pluginSpec);
-              default = [];
+              type = attrsOf (submodule pluginSpec);
+              default = {};
             };
           };
 
@@ -101,6 +105,10 @@ in {
               type = package;
               internal = true;
             };
+            plugins' = mkOption {
+              type = listOf (oneOf [package path]);
+              internal = true;
+            };
           };
         };
       };
@@ -110,47 +118,60 @@ in {
           inherit (config.neovim) build;
           inherit (pkgs.vimUtils) buildVimPluginFrom2Nix;
 
-          mkPluginFromSource = p:
-            buildVimPluginFrom2Nix {
-              inherit (p) name src;
-            };
+          plugins = mapAttrs (name: attrs:
+            if attrs.package != null
+            then attrs.package
+            else
+              buildVimPluginFrom2Nix {
+                inherit name;
+                inherit (attrs) src;
+              })
+          cfg.plugins;
         in {
           lazy = let
-            toPlugin = p:
+            toPlugin' = name: attrs: let
+              package = plugins."${name}";
+            in
               {
-                inherit (p) dev opts;
-                config =
-                  if (typeOf p.config) == "path"
-                  then _: ''dofile "${p.config}"''
-                  else p.config;
-                dependencies =
-                  map (dep: {
-                    name = dep.pname or dep.name;
-                    dir = "${dep}";
-                  })
-                  p.dependencies;
-              }
-              # TODO: assert: src and package are mutually exclusive
-              // optionalAttrs (p.src != null) (let
-                package = mkPluginFromSource p;
-              in {
+                inherit name;
                 dir = "${package}";
-                inherit (p) name;
-              })
-              // optionalAttrs (p.package != null) {
-                dir = "${p.package}";
-                name = p.package.pname or p.package.name;
               }
-              // optionalAttrs (p.event != null) {inherit (p) event;}
-              // optionalAttrs (p.ft != null) {inherit (p) ft;}
-              // optionalAttrs (p.keys != null) {inherit (p) keys;}
-              // optionalAttrs (p.name != null) {inherit (p) name;};
-            spec = toLua (map toPlugin cfg.plugins);
+              // optionalAttrs (attrs.lazy != null) {inherit (attrs) lazy;}
+              // optionalAttrs (attrs.dependencies != []) {
+                dependencies = map (dep:
+                  if builtins.isAttrs dep
+                  then {
+                    inherit (dep) name;
+                    dir = "${dep.src}";
+                  }
+                  else {
+                    name = dep;
+                    dir = toString plugins."${dep}";
+                  })
+                attrs.dependencies;
+              }
+              // optionalAttrs (typeOf attrs.config == "bool") {
+                inherit (attrs) config;
+              }
+              // optionalAttrs (builtins.isAttrs attrs.config) {
+                config = true;
+                opts = attrs.config;
+              }
+              // optionalAttrs ((typeOf attrs.config) == "path") {
+                config = _: ''dofile "${attrs.config}"'';
+              }
+              // optionalAttrs (attrs.event != null) {inherit (attrs) event;}
+              // optionalAttrs (attrs.ft != null) {inherit (attrs) ft;}
+              // optionalAttrs (attrs.keys != null) {inherit (attrs) keys;}
+              // optionalAttrs (attrs.priority != null) {inherit (attrs) priority;};
+
+            spec = toLua (mapAttrsToList toPlugin' cfg.plugins);
             opts = toLua (cfg.opts // {performance.rtp.reset = false;});
           in {
             inherit spec opts;
           };
 
+          plugins' = attrValues plugins;
           plugins =
             pkgs.runCommand "plugins.lua" {
               nativeBuildInputs = with pkgs; [stylua];
@@ -172,6 +193,7 @@ in {
 
               stylua --config-path ${../../stylua.toml} $target
             '';
+
           runtimepath = with pkgs.vimPlugins; [lazy-nvim];
         };
       };

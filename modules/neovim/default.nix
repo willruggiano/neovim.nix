@@ -4,11 +4,12 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) concatStringsSep mkOption types;
+  inherit (lib) concatStringsSep mkOption optional types;
 
   mkInitLua = {
     config,
     pkgs,
+    cpath,
     rtp,
   }:
     pkgs.writeTextFile {
@@ -16,6 +17,7 @@
       text = ''
         -- Generate by Nix (via github:willruggiano/neovim.nix)
         vim.opt.runtimepath = "${rtp.before},$VIMRUNTIME,${rtp.after}"
+        package.cpath = "${cpath};;"
 
         vim.cmd.source "${config.neovim.build.globals}"
         vim.cmd.source "${config.neovim.build.options}"
@@ -35,23 +37,34 @@ in {
       pkgs,
       ...
     }: {
-      options = {
+      options = with types; {
         neovim = {
           package = mkOption {
-            type = types.package;
+            type = package;
             description = "The Neovim derivation to use";
             inherit (inputs'.neovim.packages) default;
+          };
+
+          src = mkOption {
+            type = nullOr path;
+            description = "The root directory of your dotfiles, to be added to 'runtimepath'";
+            default = null;
           };
 
           build = {
             initlua = mkOption {
               internal = true;
-              type = types.package;
+              type = package;
+            };
+
+            cpath = mkOption {
+              internal = true;
+              type = listOf (oneOf [package path]);
             };
 
             runtimepath = mkOption {
               internal = true;
-              type = types.listOf types.package;
+              type = listOf (oneOf [package path]);
               default = [];
             };
           };
@@ -61,8 +74,15 @@ in {
       config = {
         neovim.build.initlua = mkInitLua {
           inherit config pkgs;
+
+          cpath = let
+            plugins = config.neovim.build.plugins';
+          in
+            concatStringsSep ";" (map (p: "${p}/lib/?.so;${p}/lib/lua/5.1/?.so") plugins);
+
           rtp = let
-            rtp = config.neovim.build.runtimepath;
+            inherit (config.neovim) src;
+            rtp = config.neovim.build.runtimepath ++ (optional (src != null) src);
           in {
             before = concatStringsSep "," (map (p: "${p}") rtp);
             after = concatStringsSep "," (map (p: "${p}/after") rtp);

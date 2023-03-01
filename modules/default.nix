@@ -24,7 +24,7 @@
           set -o pipefail
         ''
         + optionalString (config.neovim.paths != []) ''
-          export PATH="$PATH:${makeBinPath config.neovim.paths}/bin"
+          export PATH="$PATH:${makeBinPath config.neovim.paths}"
         ''
         + ''
           ${config.neovim.package}/bin/nvim --clean -u ${config.neovim.build.initlua} "$@"
