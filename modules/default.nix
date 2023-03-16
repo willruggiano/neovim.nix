@@ -45,7 +45,7 @@
       paths = [wrapper];
       meta.mainProgram = "nvim";
       passthru = {
-        inherit (config.neovim.build) initlua filetype globals options plugins;
+        inherit (config.neovim.build) initlua plugins;
       };
     };
 in {
