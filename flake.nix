@@ -5,6 +5,8 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
+    lazy-nvim.url = "github:folke/lazy.nvim";
+    lazy-nvim.flake = false;
     neovim.url = "github:neovim/neovim?dir=contrib";
     pre-commit-nix.url = "github:cachix/pre-commit-hooks.nix";
   };
