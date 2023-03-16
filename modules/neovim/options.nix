@@ -22,7 +22,10 @@ in {
           };
         };
 
-        # TODO: Generate these.
+        # TODO: To keep or not to keep?
+        # Is there a compelling reason to keep these?
+        # When you could just as easily write a lua file
+        # as you normally would? Seems unlikely.
         vim.opt = {
           autoindent = mkLuaOption bool;
           belloff = mkLuaOption str;

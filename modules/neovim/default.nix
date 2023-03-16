@@ -19,6 +19,7 @@
         vim.opt.runtimepath = "${rtp.before},$VIMRUNTIME,${rtp.after}"
         package.cpath = "${cpath};;"
 
+        vim.cmd.source "${config.neovim.build.filetype}"
         vim.cmd.source "${config.neovim.build.globals}"
         vim.cmd.source "${config.neovim.build.options}"
         vim.cmd.source "${config.neovim.build.plugins}"
@@ -26,6 +27,7 @@
     };
 in {
   imports = [
+    ./filetype.nix
     ./globals.nix
     ./options.nix
   ];
