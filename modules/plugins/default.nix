@@ -28,8 +28,8 @@ with lib; let
         default = null;
       };
       dependencies = mkOption {
-        type = listOf (oneOf [attrs str]);
-        default = [];
+        type = attrsOf (submodule pluginSpec);
+        default = {};
       };
       config = mkOption {
         type = nullOr (oneOf [attrs bool path]);
@@ -131,6 +131,8 @@ in {
                 inherit (attrs) src;
               })
           cfg.plugins;
+
+          deps' = collect (attrs: attrs ? dependencies) cfg.plugins;
         in {
           lazy = let
             toPlugin' = name: attrs: let
@@ -142,17 +144,7 @@ in {
               }
               // optionalAttrs (attrs.lazy != null) {inherit (attrs) lazy;}
               // optionalAttrs (attrs.dependencies != []) {
-                dependencies = map (dep:
-                  if builtins.isAttrs dep
-                  then {
-                    inherit (dep) name;
-                    dir = "${dep.src}";
-                  }
-                  else {
-                    name = dep;
-                    dir = toString plugins."${dep}";
-                  })
-                attrs.dependencies;
+                dependencies = mapAttrs toPlugin' attrs.dependencies;
               }
               // optionalAttrs (typeOf attrs.config == "bool") {
                 inherit (attrs) config;
