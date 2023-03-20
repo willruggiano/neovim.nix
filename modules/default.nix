@@ -27,7 +27,8 @@
           export PATH="$PATH:${makeBinPath config.neovim.paths}"
         ''
         + ''
-          ${config.neovim.package}/bin/nvim --clean -u ${config.neovim.build.initlua} "$@"
+          export NVIM_RPLUGIN_MANIFEST="${config.neovim.build.rplugin}/rplugin.vim"
+          ${config.neovim.package}/bin/nvim -u ${config.neovim.build.initlua} "$@"
         '';
 
       checkPhase = ''
@@ -63,16 +64,16 @@ in {
       pkgs,
       ...
     }: {
-      options = {
+      options = with types; {
         neovim = {
           paths = mkOption {
-            type = types.listOf types.package;
+            type = listOf package;
             default = [];
             description = "Additional binaries to bake into the final Neovim derivation's PATH";
           };
 
           final = mkOption {
-            type = types.package;
+            type = package;
             description = "The final Neovim derivation, with all user configuration baked in";
           };
         };

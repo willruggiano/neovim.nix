@@ -109,10 +109,6 @@ in {
               type = package;
               internal = true;
             };
-            plugins' = mkOption {
-              type = listOf (oneOf [package path]);
-              internal = true;
-            };
           };
         };
       };
@@ -122,29 +118,29 @@ in {
           inherit (config.neovim) build;
           inherit (pkgs.vimUtils) buildVimPluginFrom2Nix;
 
-          plugins = mapAttrs (name: attrs:
+          mkPlugin = name: attrs:
             if attrs.package != null
             then attrs.package
             else
               buildVimPluginFrom2Nix {
                 inherit name;
                 inherit (attrs) src;
-              })
-          cfg.plugins;
-
-          deps' = collect (attrs: attrs ? dependencies) cfg.plugins;
+              };
         in {
           lazy = let
             toPlugin' = name: attrs: let
-              package = plugins."${name}";
+              package = mkPlugin name attrs;
             in
               {
                 inherit name;
                 dir = "${package}";
               }
               // optionalAttrs (attrs.lazy != null) {inherit (attrs) lazy;}
-              // optionalAttrs (attrs.dependencies != []) {
-                dependencies = mapAttrs toPlugin' attrs.dependencies;
+              // optionalAttrs (attrs.dependencies != {}) {
+                dependencies = let
+                  deps = mapAttrs toPlugin' attrs.dependencies;
+                in
+                  attrValues deps;
               }
               // optionalAttrs (typeOf attrs.config == "bool") {
                 inherit (attrs) config;
@@ -153,7 +149,10 @@ in {
                 config = true;
                 opts = attrs.config;
               }
-              // optionalAttrs ((typeOf attrs.config) == "path") {
+              # FIXME: Rather than string, it'd be nice to allow derivations.
+              # Then you could pass a pkgs.writeTextFile (or similar) to a plugin's config
+              # but for some reason this causes infinite recursion?
+              // optionalAttrs ((typeOf attrs.config) == "path" || (typeOf attrs.config) == "string") {
                 config = _: ''dofile "${attrs.config}"'';
               }
               // optionalAttrs (attrs.event != null) {inherit (attrs) event;}
@@ -167,7 +166,6 @@ in {
             inherit spec opts;
           };
 
-          plugins' = attrValues plugins;
           plugins =
             pkgs.runCommand "plugins.lua" {
               nativeBuildInputs = with pkgs; [stylua];

@@ -8,7 +8,7 @@ in rec {
       default = null;
     };
 
-  toLuaHashMap = v: "{ ${concatStringsSep ", " (mapAttrsToList (name: value: "${name} = ${toLua value}") v)} }";
+  toLuaHashMap = v: "{ ${concatStringsSep ", " (mapAttrsToList (name: value: ''["${name}"] = ${toLua value}'') v)} }";
 
   toLuaArray = v: "{ ${concatMapStringsSep ", " toLua v} }";
 
