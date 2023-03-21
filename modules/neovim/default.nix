@@ -34,12 +34,6 @@ in {
             inherit (inputs'.neovim.packages) default;
           };
 
-          src = mkOption {
-            type = nullOr path;
-            description = "The root directory of your dotfiles, to be added to 'runtimepath'";
-            default = null;
-          };
-
           build = {
             before = mkOption {
               internal = true;
