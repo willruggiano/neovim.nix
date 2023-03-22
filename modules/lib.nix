@@ -1,6 +1,6 @@
 {lib}: let
   inherit (builtins) isFunction typeOf;
-  inherit (lib) concatStringsSep concatMapStringsSep mapAttrsToList mkOption types;
+  inherit (lib) concatStringsSep concatMapStringsSep isDerivation mapAttrsToList mkOption types;
 in rec {
   mkLuaOption = type:
     mkOption {
@@ -8,9 +8,9 @@ in rec {
       default = null;
     };
 
-  toLuaHashMap = v: "{ ${concatStringsSep ", " (mapAttrsToList (name: value: ''["${name}"] = ${toLua value}'') v)} }";
+  toLuaHashMap = v: "{ ${concatStringsSep "," (mapAttrsToList (name: value: ''["${name}"] = ${toLua value}'') v)} }";
 
-  toLuaArray = v: "{ ${concatMapStringsSep ", " toLua v} }";
+  toLuaArray = v: "{ ${concatMapStringsSep "," toLua v} }";
 
   # TODO: Surely there is a better way?
   toLua = v:

@@ -31,8 +31,12 @@ with lib; let
         type = attrsOf (submodule pluginSpec);
         default = {};
       };
+      init = mkOption {
+        type = nullOr (oneOf [package path]);
+        default = null;
+      };
       config = mkOption {
-        type = nullOr (oneOf [attrs bool path]);
+        type = nullOr (oneOf [attrs bool package path]);
         default = null;
       };
       opts = mkOption {
@@ -142,18 +146,38 @@ in {
                 in
                   attrValues deps;
               }
+              // optionalAttrs (isDerivation attrs.init || typeOf attrs.init == "path") {
+                init = _: ''
+                  dofile "${attrs.init}"
+                '';
+              }
+              # // optionalAttrs (typeOf attrs.init == "path") {
+              # TODO: This is better, but... stack overflow
+              # init = pkgs.writeTextFile {
+              #   name = "${name}-init.lua";
+              #   text = ''
+              #     dofile "${attrs.init}"
+              #   '';
+              # };
+              # }
               // optionalAttrs (typeOf attrs.config == "bool") {
                 inherit (attrs) config;
+              }
+              // optionalAttrs (isDerivation attrs.config || typeOf attrs.config == "path") {
+                # TODO: This is better, but... stack overflow
+                # config = pkgs.writeTextFile {
+                #   name = "${name}-config.lua";
+                #   text = ''
+                #     dofile "${attrs.config}"
+                #   '';
+                # };
+                config = _: ''
+                  dofile "${attrs.config}"
+                '';
               }
               // optionalAttrs (builtins.isAttrs attrs.config) {
                 config = true;
                 opts = attrs.config;
-              }
-              # FIXME: Rather than string, it'd be nice to allow derivations.
-              # Then you could pass a pkgs.writeTextFile (or similar) to a plugin's config
-              # but for some reason this causes infinite recursion?
-              // optionalAttrs ((typeOf attrs.config) == "path" || (typeOf attrs.config) == "string") {
-                config = _: ''dofile "${attrs.config}"'';
               }
               // optionalAttrs (attrs.event != null) {inherit (attrs) event;}
               // optionalAttrs (attrs.ft != null) {inherit (attrs) ft;}
