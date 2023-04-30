@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-
     flake-parts.url = "github:hercules-ci/flake-parts";
     lazy-nvim.url = "github:folke/lazy.nvim";
     lazy-nvim.flake = false;
@@ -27,7 +26,7 @@
         };
       };
 
-      systems = ["x86_64-linux"];
+      systems = ["aarch64-darwin" "x86_64-linux"];
       perSystem = {
         config,
         pkgs,
