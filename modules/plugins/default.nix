@@ -77,17 +77,22 @@ in {
               type = package;
               default = pkgs.vimPlugins.lazy-nvim;
             };
-            opts = {
-              dev = {
-                path = mkOption {
-                  type = nullOr (oneOf [path str]);
-                  default = null;
-                };
-              };
-              install = {
-                missing = mkOption {
-                  type = bool;
-                  default = false;
+            settings = mkOption {
+              type = submodule {
+                freeformType = attrsOf anything;
+                options = {
+                  dev = {
+                    path = mkOption {
+                      type = nullOr (oneOf [path str]);
+                      default = null;
+                    };
+                  };
+                  install = {
+                    missing = mkOption {
+                      type = bool;
+                      default = false;
+                    };
+                  };
                 };
               };
             };
@@ -185,7 +190,7 @@ in {
               // optionalAttrs (attrs.priority != null) {inherit (attrs) priority;};
 
             spec = toLua (mapAttrsToList toPlugin' cfg.plugins);
-            opts = toLua (cfg.opts // {performance.rtp.reset = false;});
+            opts = toLua ({performance.rtp.reset = false;} // cfg.settings);
           in {
             inherit spec opts;
           };
