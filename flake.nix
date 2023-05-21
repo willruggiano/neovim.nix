@@ -8,6 +8,18 @@
     lazy-nvim.flake = false;
     neovim.url = "github:neovim/neovim?dir=contrib";
     pre-commit-nix.url = "github:cachix/pre-commit-hooks.nix";
+
+    # FIXME: This would be nice, and also a test of sorts
+    # example = {
+    #   url = "path:./example";
+    #   inputs = {
+    #     # FIXME: override for a non-existent input 'nixpkgs'
+    #     # nixpkgs.follows = "nixpkgs";
+    #     flake-parts.follows = "flake-parts";
+    #     # FIXME: override for a non-existent input 'neovim-nix'
+    #     # neovim-nix.follows = "self";
+    #   };
+    # };
   };
 
   outputs = {
@@ -42,7 +54,10 @@
 
         formatter = pkgs.alejandra;
 
-        packages.utils = pkgs.callPackage ./utils.nix {};
+        packages = {
+          # example = inputs'.example.packages.default;
+          utils = pkgs.callPackage ./utils.nix {};
+        };
 
         pre-commit = {
           settings = {

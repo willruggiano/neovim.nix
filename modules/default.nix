@@ -4,32 +4,42 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) makeBinPath mkOption optionalString types;
+  inherit (lib) concatStringsSep makeBinPath mapAttrsToList mkOption optional types unique;
 
   mkNeovimEnv = {
     config,
     pkgs,
     ...
   }: let
+    cfg = config.neovim;
+
     # TODO: Use wrapProgram?
     wrapper = pkgs.writeTextFile rec {
       name = "nvim";
       executable = true;
       destination = "/bin/${name}";
-      text =
+      text = concatStringsSep "\n" ([
+          ''
+            #!${pkgs.runtimeShell}
+            set -o errexit
+            set -o nounset
+            set -o pipefail
+          ''
+        ]
+        ++ optional (cfg.paths != []) ''
+          export PATH="$PATH:${makeBinPath (unique cfg.paths)}"
         ''
-          #!${pkgs.runtimeShell}
-          set -o errexit
-          set -o nounset
-          set -o pipefail
-        ''
-        + optionalString (config.neovim.paths != []) ''
-          export PATH="$PATH:${makeBinPath config.neovim.paths}"
-        ''
-        + ''
-          export NVIM_RPLUGIN_MANIFEST="${config.neovim.build.rplugin}/rplugin.vim"
-          ${config.neovim.package}/bin/nvim -u ${config.neovim.build.initlua} "$@"
-        '';
+        ++ [
+          ''
+            ${concatStringsSep "\n" (mapAttrsToList (name: value: ''export ${name}="''${${name}:-${toString value}}"'') cfg.env)}
+          ''
+        ]
+        ++ [
+          ''
+            export NVIM_RPLUGIN_MANIFEST="${config.neovim.build.rplugin}/rplugin.vim"
+            ${config.neovim.package}/bin/nvim -u ${cfg.build.initlua} "$@"
+          ''
+        ]);
 
       checkPhase = ''
         runHook preCheck
@@ -66,6 +76,11 @@ in {
     }: {
       options = with types; {
         neovim = {
+          env = mkOption {
+            type = attrs;
+            default = {};
+            description = "Environment variables to bake into the final Neovim derivation's runtime";
+          };
           paths = mkOption {
             type = listOf package;
             default = [];

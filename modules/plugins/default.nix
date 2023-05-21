@@ -59,6 +59,10 @@ with lib; let
         type = nullOr int;
         default = null;
       };
+      paths = mkOption {
+        type = listOf package;
+        default = [];
+      };
     };
   };
 in {
@@ -218,6 +222,15 @@ in {
               stylua --config-path ${../../stylua.toml} $target
             '';
         };
+
+        neovim.paths = let
+          toPaths = name: attrs: let
+            paths = attrs.paths or [];
+          in
+            paths ++ (mapAttrsToList toPaths (attrs.dependencies or {}));
+          paths = mapAttrsToList toPaths cfg.plugins;
+        in
+          mkAfter (flatten paths);
       };
     });
   };
