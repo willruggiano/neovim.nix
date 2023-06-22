@@ -138,6 +138,7 @@ in {
               buildVimPluginFrom2Nix {
                 inherit name;
                 inherit (attrs) src;
+                leaveDotGit = true; # So some lazy features (commands) work properly
               };
         in {
           lazy = let
