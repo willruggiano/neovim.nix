@@ -74,13 +74,14 @@ in {
           inherit config pkgs;
         };
 
-        neovim.build.rplugin =
+        neovim.build.rplugin = with lib;
           pkgs.runCommand "rplugin.vim" {
             nativeBuildInputs = [config.neovim.package];
           } ''
             mkdir $out
             export HOME=$TMP
             export NVIM_RPLUGIN_MANIFEST=$out/rplugin.vim
+            export PATH="$PATH:${makeBinPath (unique config.neovim.paths)}"
             nvim --headless -i NONE -n -u ${config.neovim.build.initlua} +UpdateRemotePlugins +quit!
           '';
       };
