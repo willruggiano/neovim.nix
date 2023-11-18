@@ -129,13 +129,13 @@ in {
       config = mkIf (cfg.plugins != []) {
         neovim.build = let
           inherit (config.neovim) build;
-          inherit (pkgs.vimUtils) buildVimPlugin;
+          inherit (pkgs.vimUtils) buildVimPluginFrom2Nix;
 
           mkPlugin = name: attrs:
             if attrs.package != null
             then attrs.package
             else
-              buildVimPlugin {
+              buildVimPluginFrom2Nix {
                 inherit name;
                 inherit (attrs) src;
                 leaveDotGit = true; # So some lazy features (commands) work properly

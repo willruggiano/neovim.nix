@@ -16,6 +16,7 @@ stdenv.mkDerivation {
     lualib = luajit.pkgs.luaLib;
     luajitPackages = luajit.pkgs;
   in {
+    mkPlugin = vimUtils.buildVimPluginFrom2Nix;
     toLuarocksPlugin = originalLuaDrv: let
       inherit (luajitPackages) luarocksMoveDataFolder;
       luaDrv = lualib.overrideLuarocks originalLuaDrv (drv: {
