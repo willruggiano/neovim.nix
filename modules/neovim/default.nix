@@ -4,7 +4,7 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) mkOption types;
+  inherit (lib) mkOption mkPackageOption types;
 
   mkInitLua = {
     config,
@@ -28,12 +28,7 @@ in {
     }: {
       options = with types; {
         neovim = {
-          package = mkOption {
-            type = package;
-            description = "The Neovim derivation to use";
-            inherit (inputs'.neovim.packages) default;
-          };
-
+          package = mkPackageOption pkgs "neovim" {};
           build = {
             before = mkOption {
               internal = true;

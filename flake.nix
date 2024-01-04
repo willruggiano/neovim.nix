@@ -41,10 +41,22 @@
       systems = ["aarch64-darwin" "x86_64-linux"];
       perSystem = {
         config,
-        pkgs,
         inputs',
+        system,
         ...
-      }: {
+      }: let
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [
+            inputs.neovim.overlay
+            (final: prev: {
+              neovim-unwrapped = inputs'.neovim.packages.default;
+            })
+          ];
+        };
+      in {
+        _module.args.pkgs = pkgs;
+
         devShells.default = pkgs.mkShell {
           name = "neovim.nix";
           shellHook = ''

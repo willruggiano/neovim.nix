@@ -37,7 +37,7 @@
         ++ [
           ''
             export NVIM_RPLUGIN_MANIFEST="${config.neovim.build.rplugin}/rplugin.vim"
-            ${config.neovim.package}/bin/nvim -u ${cfg.build.initlua} "$@"
+            ${cfg.package}/bin/nvim -u ${cfg.build.initlua} "$@"
           ''
         ]);
 
