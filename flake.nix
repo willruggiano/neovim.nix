@@ -48,8 +48,8 @@
         pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [
-            inputs.neovim.overlay
             (final: prev: {
+              neovim = inputs'.neovim.packages.default;
               neovim-unwrapped = inputs'.neovim.packages.default;
             })
           ];
