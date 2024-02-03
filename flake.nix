@@ -6,7 +6,6 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     lazy-nvim.url = "github:folke/lazy.nvim";
     lazy-nvim.flake = false;
-    neovim.url = "github:neovim/neovim?dir=contrib";
     pre-commit-nix.url = "github:cachix/pre-commit-hooks.nix";
 
     # FIXME: This would be nice, and also a test of sorts
@@ -42,21 +41,10 @@
       perSystem = {
         config,
         inputs',
+        pkgs,
         system,
         ...
-      }: let
-        pkgs = import inputs.nixpkgs {
-          inherit system;
-          overlays = [
-            (final: prev: {
-              neovim = inputs'.neovim.packages.default;
-              neovim-unwrapped = inputs'.neovim.packages.default;
-            })
-          ];
-        };
-      in {
-        _module.args.pkgs = pkgs;
-
+      }: {
         devShells.default = pkgs.mkShell {
           name = "neovim.nix";
           shellHook = ''
