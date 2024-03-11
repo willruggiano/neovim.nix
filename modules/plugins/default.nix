@@ -4,7 +4,6 @@
   ...
 }:
 with lib; let
-  inherit (builtins) typeOf;
   inherit (flake-parts-lib) mkPerSystemOption;
   pluginSpec = with types; {
     options = {
@@ -153,10 +152,13 @@ in {
                 in
                   attrValues deps;
               }
-              // optionalAttrs (isDerivation attrs.init || typeOf attrs.init == "path") {
+              // optionalAttrs (isDerivation attrs.init || isPath attrs.init) {
                 init = lib.generators.mkLuaInline ''dofile "${attrs.init}"'';
               }
-              // optionalAttrs (isDerivation attrs.config || typeOf attrs.config == "path") {
+              // optionalAttrs (isBool attrs.config) {
+                inherit (attrs) config;
+              }
+              // optionalAttrs (isDerivation attrs.config || isPath attrs.config) {
                 config = lib.generators.mkLuaInline ''dofile "${attrs.config}"'';
               }
               // optionalAttrs (builtins.isAttrs attrs.config) {
