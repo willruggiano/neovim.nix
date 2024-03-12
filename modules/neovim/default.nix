@@ -52,7 +52,7 @@ in {
         cfg = config.neovim;
         pythonEnv =
           (cfg.python.package).withPackages
-          (ps: [ps.pynvim] ++ (cfg.python.extraPython3Packages ps));
+          (ps: [ps.pynvim] ++ (cfg.python.extraPackages ps));
         env = pkgs.buildEnv {
           name = "neovim-host-prog";
           paths = [pkgs.nodePackages.neovim pythonEnv];

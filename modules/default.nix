@@ -95,7 +95,7 @@ in {
                   default = pkgs.python3;
                   description = "Python interpreter to use for Neovim";
                 };
-                extraPython3Packages = mkOption {
+                extraPackages = mkOption {
                   type = functionTo (listOf package);
                   default = _: [];
                   example =
