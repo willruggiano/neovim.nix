@@ -5,7 +5,6 @@
 }:
 with lib; let
   inherit (flake-parts-lib) mkPerSystemOption;
-  isLuaInline = e: isAttrs e && matchAttrs {_type = "lua-inline";} e;
   pluginSpec = with types; {
     options = {
       src = mkOption {
@@ -33,7 +32,7 @@ with lib; let
         default = null;
       };
       config = mkOption {
-        type = nullOr (oneOf [attrs bool package path]);
+        type = nullOr (oneOf [attrs bool package path str]);
         default = null;
       };
       opts = mkOption {
@@ -156,13 +155,16 @@ in {
               // optionalAttrs (isDerivation attrs.init || isPath attrs.init) {
                 init = lib.generators.mkLuaInline ''dofile "${attrs.init}"'';
               }
-              // optionalAttrs (isBool attrs.config || isLuaInline attrs.config) {
+              // optionalAttrs (isBool attrs.config) {
                 inherit (attrs) config;
+              }
+              // optionalAttrs (isString attrs.config) {
+                config = lib.generators.mkLuaInline attrs.config;
               }
               // optionalAttrs (isDerivation attrs.config || isPath attrs.config) {
                 config = lib.generators.mkLuaInline ''dofile "${attrs.config}"'';
               }
-              // optionalAttrs (lib.isAttrs attrs.config && !(isLuaInline attrs.config)) {
+              // optionalAttrs (isAttrs attrs.config) {
                 config = true;
                 opts = attrs.config;
               }
