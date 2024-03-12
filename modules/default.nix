@@ -4,7 +4,7 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) concatStringsSep makeBinPath mapAttrsToList mkOption optional types unique;
+  inherit (lib) mkOption types;
 
   mkNeovimEnv = {
     config,
@@ -12,50 +12,20 @@
     ...
   }: let
     cfg = config.neovim;
-
-    # TODO: Use wrapProgram?
-    wrapper = pkgs.writeTextFile rec {
-      name = "nvim";
-      executable = true;
-      destination = "/bin/${name}";
-      text = concatStringsSep "\n" ([
-          ''
-            #!${pkgs.runtimeShell}
-            set -o errexit
-            set -o nounset
-            set -o pipefail
-          ''
-        ]
-        ++ optional (cfg.paths != []) ''
-          export PATH="$PATH:${makeBinPath (unique cfg.paths)}"
-        ''
-        ++ [
-          ''
-            ${concatStringsSep "\n" (mapAttrsToList (name: value: ''export ${name}="''${${name}:-${toString value}}"'') cfg.env)}
-          ''
-        ]
-        ++ [
-          ''
-            export NVIM_RPLUGIN_MANIFEST="${config.neovim.build.rplugin}/rplugin.vim"
-            ${cfg.package}/bin/nvim -u ${cfg.build.initlua} "$@"
-          ''
-        ]);
-
-      checkPhase = ''
-        runHook preCheck
-        ${pkgs.stdenv.shellDryRun} "$target"
-        ${pkgs.shellcheck}/bin/shellcheck "$target"
-        runHook postCheck
-      '';
-
-      meta.mainProgram = name;
-    };
   in
-    pkgs.buildEnv {
-      name = "neovim-env";
-      paths = [wrapper];
+    pkgs.writeShellApplication {
+      name = "nvim";
+      runtimeInputs = cfg.paths;
+      runtimeEnv =
+        {
+          NVIM_RPLUGIN_MANIFEST = "${config.neovim.build.rplugin}/rplugin.vim";
+        }
+        // (cfg.env or {});
       meta.mainProgram = "nvim";
-      passthru = {
+      text = ''
+        ${cfg.package}/bin/nvim -u ${cfg.build.initlua} "$@"
+      '';
+      derivationArgs.passthru = {
         inherit (config.neovim.build) initlua plugins;
       };
     };
