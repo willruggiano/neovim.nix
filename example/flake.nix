@@ -27,9 +27,13 @@
 
           lazy = {
             settings = {
-              disabled_plugins = [
-                "gzip"
-              ];
+              performance.rtp = {
+                disabled_plugins = [
+                  "gzip"
+                  "matchit"
+                  "netrwPlugin"
+                ];
+              };
             };
             plugins = {
               example = {
@@ -39,14 +43,13 @@
                 priority = 1000;
                 dependencies = {
                   lfs = let
-                    package = pkgs.luajitPackages.lfs;
+                    package = pkgs.luajitPackages.luafilesystem;
                   in {
                     inherit package;
                     init = pkgs.writeTextFile {
                       name = "lfs.lua";
                       text = ''
                         return function()
-                          -- TODO: It'd be nice to detect this automatically
                           package.cpath = package.cpath .. ";" .. "${package}/lib/lua/5.1/?.so"
                         end
                       '';
@@ -63,7 +66,16 @@
           };
         };
 
-        packages.default = config.neovim.final;
+        packages = {
+          default = config.neovim.final;
+          test = pkgs.writeShellApplication {
+            name = "neovim-nix-spec";
+            runtimeInputs = [config.neovim.final];
+            text = ''
+              nvim --headless -c "PlenaryBustedDirectory ${./.}/spec { init = '${config.neovim.build.initlua}' }"
+            '';
+          };
+        };
       };
     };
 }
