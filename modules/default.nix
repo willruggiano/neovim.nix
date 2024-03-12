@@ -17,11 +17,10 @@
       name = "nvim";
       runtimeInputs = cfg.paths;
       runtimeEnv =
-        {
+        (cfg.env or {})
+        // {
           NVIM_RPLUGIN_MANIFEST = "${config.neovim.build.rplugin}/rplugin.vim";
-        }
-        // (cfg.env or {});
-      meta.mainProgram = "nvim";
+        };
       text = ''
         ${cfg.package}/bin/nvim -u ${cfg.build.initlua} "$@"
       '';
