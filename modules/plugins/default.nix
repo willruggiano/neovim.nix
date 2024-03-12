@@ -1,14 +1,10 @@
 {
   lib,
   flake-parts-lib,
-  neovim-lib,
   ...
 }:
 with lib; let
-  inherit (builtins) typeOf;
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (neovim-lib) toLua;
-
   pluginSpec = with types; {
     options = {
       src = mkOption {
@@ -156,34 +152,14 @@ in {
                 in
                   attrValues deps;
               }
-              // optionalAttrs (isDerivation attrs.init || typeOf attrs.init == "path") {
-                init = _: ''
-                  dofile "${attrs.init}"
-                '';
+              // optionalAttrs (isDerivation attrs.init || isPath attrs.init) {
+                init = lib.generators.mkLuaInline ''dofile "${attrs.init}"'';
               }
-              # // optionalAttrs (typeOf attrs.init == "path") {
-              # TODO: This is better, but... stack overflow
-              # init = pkgs.writeTextFile {
-              #   name = "${name}-init.lua";
-              #   text = ''
-              #     dofile "${attrs.init}"
-              #   '';
-              # };
-              # }
-              // optionalAttrs (typeOf attrs.config == "bool") {
+              // optionalAttrs (isBool attrs.config) {
                 inherit (attrs) config;
               }
-              // optionalAttrs (isDerivation attrs.config || typeOf attrs.config == "path") {
-                # TODO: This is better, but... stack overflow
-                # config = pkgs.writeTextFile {
-                #   name = "${name}-config.lua";
-                #   text = ''
-                #     dofile "${attrs.config}"
-                #   '';
-                # };
-                config = _: ''
-                  dofile "${attrs.config}"
-                '';
+              // optionalAttrs (isDerivation attrs.config || isPath attrs.config) {
+                config = lib.generators.mkLuaInline ''dofile "${attrs.config}"'';
               }
               // optionalAttrs (builtins.isAttrs attrs.config) {
                 config = true;
@@ -194,8 +170,8 @@ in {
               // optionalAttrs (attrs.keys != null) {inherit (attrs) keys;}
               // optionalAttrs (attrs.priority != null) {inherit (attrs) priority;};
 
-            spec = toLua (mapAttrsToList toPlugin' cfg.plugins);
-            opts = toLua ({performance.rtp.reset = false;} // cfg.settings);
+            spec = lib.generators.toLua {} (mapAttrsToList toPlugin' cfg.plugins);
+            opts = lib.generators.toLua {} ({performance.rtp.reset = false;} // cfg.settings);
           in {
             inherit spec opts;
           };
