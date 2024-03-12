@@ -4,7 +4,7 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) mkOption types;
+  inherit (lib) makeBinPath mkOption types unique;
 
   mkNeovimEnv = {
     config,
@@ -15,15 +15,19 @@
   in
     pkgs.writeShellApplication {
       name = "nvim";
-      runtimeInputs = cfg.paths;
       runtimeEnv =
         (cfg.env or {})
         // {
           NVIM_RPLUGIN_MANIFEST = "${config.neovim.build.rplugin}/rplugin.vim";
         };
-      text = ''
-        ${cfg.package}/bin/nvim -u ${cfg.build.initlua} "$@"
-      '';
+      text =
+        lib.optionalString (cfg.paths != [])
+        ''
+          export PATH="$PATH:${makeBinPath (unique cfg.paths)}"
+        ''
+        + ''
+          ${cfg.package}/bin/nvim -u ${cfg.build.initlua} "$@"
+        '';
       derivationArgs.passthru = {
         inherit (config.neovim.build) initlua plugins;
       };
