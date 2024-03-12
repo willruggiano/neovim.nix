@@ -32,7 +32,7 @@ with lib; let
         default = null;
       };
       config = mkOption {
-        type = nullOr (oneOf [attrs bool package path]);
+        type = nullOr (oneOf [attrs bool package path str]);
         default = null;
       };
       opts = mkOption {
@@ -158,10 +158,13 @@ in {
               // optionalAttrs (isBool attrs.config) {
                 inherit (attrs) config;
               }
+              // optionalAttrs (isString attrs.config) {
+                config = lib.generators.mkLuaInline attrs.config;
+              }
               // optionalAttrs (isDerivation attrs.config || isPath attrs.config) {
                 config = lib.generators.mkLuaInline ''dofile "${attrs.config}"'';
               }
-              // optionalAttrs (builtins.isAttrs attrs.config) {
+              // optionalAttrs (isAttrs attrs.config) {
                 config = true;
                 opts = attrs.config;
               }
