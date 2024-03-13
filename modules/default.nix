@@ -12,11 +12,18 @@
     ...
   }: let
     cfg = config.neovim;
+    toEnvVar = name: value: ''export ${name}="''${${name}:-${toString value}}"'';
   in
     pkgs.writeShellApplication {
       name = "nvim";
       text = concatStringsSep "\n" (
-        optionals (cfg.env != {}) (mapAttrsToList (name: value: ''export ${name}="''${${name}:-${toString value}}"'') cfg.env)
+        # NOTE: We don't use writeShellApplication's `runtimeEnv` argument since
+        # it does not allow the specified environment variables to be overridden
+        # (e.g. by direnv).
+        optionals (cfg.env != {}) (mapAttrsToList toEnvVar cfg.env)
+        # NOTE: Similar sentiment here. We don't use writeShellApplication's
+        # `runtimeInputs` because it would *prepend* `cfg.paths`. What we want,
+        # rather, is to *append* them such that they too can be overridden.
         ++ optional (cfg.paths != []) ''
           export PATH="$PATH:${makeBinPath (unique cfg.paths)}"
         ''
