@@ -1,4 +1,4 @@
-name: Update example flake
+name: Update, build and test example flake
 
 on:
   push:
@@ -17,6 +17,7 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix flake lock --update-input neovim-nix ./example
+      - run: nix run .#check
       - run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'willruggiano@users.noreply.github.com'
