@@ -4,7 +4,7 @@
   ...
 }: let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) concatStringsSep makeBinPath mapAttrsToList mkOption optional types unique;
+  inherit (lib) concatStringsSep makeBinPath mapAttrsToList mkOption optional optionals types unique;
 
   mkNeovimEnv = {
     config,
@@ -12,50 +12,29 @@
     ...
   }: let
     cfg = config.neovim;
-
-    # TODO: Use wrapProgram?
-    wrapper = pkgs.writeTextFile rec {
+    toEnvVar = name: value: ''export ${name}="''${${name}:-${toString value}}"'';
+  in
+    pkgs.writeShellApplication {
       name = "nvim";
-      executable = true;
-      destination = "/bin/${name}";
-      text = concatStringsSep "\n" ([
-          ''
-            #!${pkgs.runtimeShell}
-            set -o errexit
-            set -o nounset
-            set -o pipefail
-          ''
-        ]
+      text = concatStringsSep "\n" (
+        # NOTE: We don't use writeShellApplication's `runtimeEnv` argument since
+        # it does not allow the specified environment variables to be overridden
+        # (e.g. by direnv).
+        optionals (cfg.env != {}) (mapAttrsToList toEnvVar cfg.env)
+        # NOTE: Similar sentiment here. We don't use writeShellApplication's
+        # `runtimeInputs` because it would *prepend* `cfg.paths`. What we want,
+        # rather, is to *append* them such that they too can be overridden.
         ++ optional (cfg.paths != []) ''
           export PATH="$PATH:${makeBinPath (unique cfg.paths)}"
         ''
         ++ [
           ''
-            ${concatStringsSep "\n" (mapAttrsToList (name: value: ''export ${name}="''${${name}:-${toString value}}"'') cfg.env)}
-          ''
-        ]
-        ++ [
-          ''
             export NVIM_RPLUGIN_MANIFEST="${config.neovim.build.rplugin}/rplugin.vim"
             ${cfg.package}/bin/nvim -u ${cfg.build.initlua} "$@"
           ''
-        ]);
-
-      checkPhase = ''
-        runHook preCheck
-        ${pkgs.stdenv.shellDryRun} "$target"
-        ${pkgs.shellcheck}/bin/shellcheck "$target"
-        runHook postCheck
-      '';
-
-      meta.mainProgram = name;
-    };
-  in
-    pkgs.buildEnv {
-      name = "neovim-env";
-      paths = [wrapper];
-      meta.mainProgram = "nvim";
-      passthru = {
+        ]
+      );
+      derivationArgs.passthru = {
         inherit (config.neovim.build) initlua plugins;
       };
     };
