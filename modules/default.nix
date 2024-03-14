@@ -75,6 +75,25 @@ in {
             description = "Additional binaries to bake into the final Neovim derivation's PATH";
           };
 
+          python = mkOption {
+            type = submodule {
+              options = {
+                package = mkOption {
+                  type = package;
+                  default = pkgs.python3;
+                  description = "Python interpreter to use for Neovim";
+                };
+                extraPackages = mkOption {
+                  type = functionTo (listOf package);
+                  default = _: [];
+                  example =
+                    lib.literalExpression "ps: with ps; [requests]";
+                  description = "Python packages to install into the final Neovim derivation";
+                };
+              };
+            };
+          };
+
           final = mkOption {
             type = package;
             description = "The final Neovim derivation, with all user configuration baked in";
