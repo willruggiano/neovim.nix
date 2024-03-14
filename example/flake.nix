@@ -46,14 +46,7 @@
                     package = pkgs.luajitPackages.luafilesystem;
                   in {
                     inherit package;
-                    init = pkgs.writeTextFile {
-                      name = "lfs.lua";
-                      text = ''
-                        return function()
-                          package.cpath = package.cpath .. ";" .. "${package}/lib/lua/5.1/?.so"
-                        end
-                      '';
-                    };
+                    cpath = "${package}/lib/lua/5.1/?.so";
                   };
 
                   plenary = {

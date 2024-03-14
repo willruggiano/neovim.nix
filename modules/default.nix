@@ -2,9 +2,9 @@
   lib,
   flake-parts-lib,
   ...
-}: let
+}:
+with lib; let
   inherit (flake-parts-lib) mkPerSystemOption;
-  inherit (lib) concatStringsSep makeBinPath mapAttrsToList mkOption optional optionals types unique;
 
   mkNeovimEnv = {
     config,
@@ -13,6 +13,7 @@
   }: let
     cfg = config.neovim;
     toEnvVar = name: value: ''export ${name}="''${${name}:-${toString value}}"'';
+    makeLuaSearchPath = paths: concatStringsSep ";" (filter (x: x != null) paths);
   in
     pkgs.writeShellApplication {
       name = "nvim";
@@ -26,6 +27,9 @@
         # rather, is to *append* them such that they too can be overridden.
         ++ optional (cfg.paths != []) ''
           export PATH="$PATH:${makeBinPath (unique cfg.paths)}"
+        ''
+        ++ optional (cfg.cpaths != []) ''
+          export LUA_CPATH="''${LUA_CPATH:-};${makeLuaSearchPath cfg.cpaths}"
         ''
         ++ [
           ''
@@ -59,6 +63,11 @@ in {
             type = attrs;
             default = {};
             description = "Environment variables to bake into the final Neovim derivation's runtime";
+          };
+          cpaths = mkOption {
+            internal = true;
+            type = listOf str;
+            default = [];
           };
           paths = mkOption {
             type = listOf package;
