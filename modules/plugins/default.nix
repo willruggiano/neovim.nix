@@ -1,6 +1,6 @@
 {
-  lib,
   flake-parts-lib,
+  lib,
   ...
 }:
 with lib; let
@@ -72,9 +72,7 @@ in {
       config,
       pkgs,
       ...
-    }: let
-      cfg = config.neovim.lazy;
-    in {
+    }: {
       options = with types; {
         neovim = {
           lazy = {
@@ -126,101 +124,109 @@ in {
           };
         };
       };
+    });
+  };
 
-      config = mkIf (cfg.plugins != []) {
-        neovim = let
-          mapPluginsRec = fn: mapAttrsToList (name: attrs: (fn name attrs) ++ (mapAttrsToList fn attrs.dependencies)) cfg.plugins;
+  config = {
+    perSystem = {
+      config,
+      pkgs,
+      ...
+    }: let
+      cfg = config.neovim.lazy;
+    in {
+      neovim = let
+        mapPluginsRec = fn: mapAttrsToList (name: attrs: (fn name attrs) ++ (mapAttrsToList fn attrs.dependencies)) cfg.plugins;
+      in {
+        build = let
+          inherit (config.neovim) build;
+          inherit (pkgs.vimUtils) buildVimPlugin;
+
+          mkPlugin = name: attrs:
+            if attrs.package != null
+            then attrs.package
+            else
+              buildVimPlugin {
+                inherit name;
+                inherit (attrs) src;
+                leaveDotGit = true; # So some lazy features (commands) work properly
+              };
         in {
-          build = let
-            inherit (config.neovim) build;
-            inherit (pkgs.vimUtils) buildVimPlugin;
+          lazy = let
+            toPlugin' = name: attrs: let
+              package = mkPlugin name attrs;
+            in
+              {
+                inherit name;
+                dir = "${package}";
+              }
+              // optionalAttrs (attrs.lazy != null) {inherit (attrs) lazy;}
+              // optionalAttrs (attrs.dependencies != {}) {
+                dependencies = let
+                  deps = mapAttrs toPlugin' attrs.dependencies;
+                in
+                  attrValues deps;
+              }
+              // optionalAttrs (isDerivation attrs.init || isPath attrs.init) {
+                init = lib.generators.mkLuaInline ''dofile "${attrs.init}"'';
+              }
+              // optionalAttrs (isBool attrs.config) {
+                inherit (attrs) config;
+              }
+              // optionalAttrs (isString attrs.config) {
+                config = lib.generators.mkLuaInline attrs.config;
+              }
+              // optionalAttrs (isDerivation attrs.config || isPath attrs.config) {
+                config = lib.generators.mkLuaInline ''dofile "${attrs.config}"'';
+              }
+              // optionalAttrs (isAttrs attrs.config) {
+                config = true;
+                opts = attrs.config;
+              }
+              // optionalAttrs (attrs.event != null) {inherit (attrs) event;}
+              // optionalAttrs (attrs.ft != null) {inherit (attrs) ft;}
+              // optionalAttrs (attrs.keys != null) {inherit (attrs) keys;}
+              // optionalAttrs (attrs.priority != null) {inherit (attrs) priority;};
 
-            mkPlugin = name: attrs:
-              if attrs.package != null
-              then attrs.package
-              else
-                buildVimPlugin {
-                  inherit name;
-                  inherit (attrs) src;
-                  leaveDotGit = true; # So some lazy features (commands) work properly
-                };
+            spec = lib.generators.toLua {} (mapAttrsToList toPlugin' cfg.plugins);
+            opts = lib.generators.toLua {} ({performance.rtp.reset = false;} // cfg.settings);
           in {
-            lazy = let
-              toPlugin' = name: attrs: let
-                package = mkPlugin name attrs;
-              in
-                {
-                  inherit name;
-                  dir = "${package}";
-                }
-                // optionalAttrs (attrs.lazy != null) {inherit (attrs) lazy;}
-                // optionalAttrs (attrs.dependencies != {}) {
-                  dependencies = let
-                    deps = mapAttrs toPlugin' attrs.dependencies;
-                  in
-                    attrValues deps;
-                }
-                // optionalAttrs (isDerivation attrs.init || isPath attrs.init) {
-                  init = lib.generators.mkLuaInline ''dofile "${attrs.init}"'';
-                }
-                // optionalAttrs (isBool attrs.config) {
-                  inherit (attrs) config;
-                }
-                // optionalAttrs (isString attrs.config) {
-                  config = lib.generators.mkLuaInline attrs.config;
-                }
-                // optionalAttrs (isDerivation attrs.config || isPath attrs.config) {
-                  config = lib.generators.mkLuaInline ''dofile "${attrs.config}"'';
-                }
-                // optionalAttrs (isAttrs attrs.config) {
-                  config = true;
-                  opts = attrs.config;
-                }
-                // optionalAttrs (attrs.event != null) {inherit (attrs) event;}
-                // optionalAttrs (attrs.ft != null) {inherit (attrs) ft;}
-                // optionalAttrs (attrs.keys != null) {inherit (attrs) keys;}
-                // optionalAttrs (attrs.priority != null) {inherit (attrs) priority;};
-
-              spec = lib.generators.toLua {} (mapAttrsToList toPlugin' cfg.plugins);
-              opts = lib.generators.toLua {} ({performance.rtp.reset = false;} // cfg.settings);
-            in {
-              inherit spec opts;
-            };
-
-            plugins =
-              pkgs.runCommand "plugins.lua" {
-                nativeBuildInputs = with pkgs; [stylua];
-                passAsFile = ["text"];
-                preferLocalBuild = true;
-                allowSubstitutes = false;
-                text = ''
-                  -- Generated by Nix (via github:willruggiano/neovim.nix)
-                  vim.opt.rtp:prepend "${cfg.package}"
-                  require("lazy").setup(${build.lazy.spec}, ${build.lazy.opts})
-                '';
-              } ''
-                target=$out
-                mkdir -p "$(dirname "$target")"
-                if [ -e "$textPath" ]; then
-                  mv "$textPath" "$target"
-                else
-                  echo -n "$text" > "$target"
-                fi
-
-                stylua --config-path ${../../stylua.toml} $target
-              '';
+            inherit spec opts;
           };
 
-          cpaths = let
-            cpaths = mapPluginsRec (_: attrs: optional (attrs.cpath != null) attrs.cpath);
-          in
-            mkAfter (flatten cpaths);
-          paths = let
-            paths = mapPluginsRec (name: attrs: attrs.paths);
-          in
-            mkAfter (flatten paths);
+          plugins =
+            pkgs.runCommand "plugins.lua" {
+              nativeBuildInputs = with pkgs; [stylua];
+              passAsFile = ["text"];
+              preferLocalBuild = true;
+              allowSubstitutes = false;
+              text = ''
+                -- Generated by Nix (via github:willruggiano/neovim.nix)
+                vim.opt.rtp:prepend "${cfg.package}"
+                require("lazy").setup(${build.lazy.spec}, ${build.lazy.opts})
+              '';
+            } ''
+              target=$out
+              mkdir -p "$(dirname "$target")"
+              if [ -e "$textPath" ]; then
+                mv "$textPath" "$target"
+              else
+                echo -n "$text" > "$target"
+              fi
+
+              stylua --config-path ${../../stylua.toml} $target
+            '';
         };
+
+        cpaths = let
+          cpaths = mapPluginsRec (_: attrs: optional (attrs.cpath != null) attrs.cpath);
+        in
+          mkAfter (flatten cpaths);
+        paths = let
+          paths = mapPluginsRec (name: attrs: attrs.paths);
+        in
+          mkAfter (flatten paths);
       };
-    });
+    };
   };
 }

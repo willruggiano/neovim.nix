@@ -1,6 +1,6 @@
 {
-  lib,
   flake-parts-lib,
+  lib,
   ...
 }:
 with lib; let
@@ -44,9 +44,6 @@ with lib; let
     };
 in {
   imports = [
-    {
-      _module.args.neovim-lib = import ./lib.nix {inherit lib;};
-    }
     ./neovim
     ./plugins
   ];
@@ -81,12 +78,18 @@ in {
           };
         };
       };
-
-      config = {
-        neovim = {
-          final = mkNeovimEnv {inherit config pkgs;};
-        };
-      };
     });
+  };
+
+  config = {
+    perSystem = {
+      config,
+      pkgs,
+      ...
+    }: {
+      neovim = {
+        final = mkNeovimEnv {inherit config pkgs;};
+      };
+    };
   };
 }
