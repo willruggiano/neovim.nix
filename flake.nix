@@ -4,20 +4,17 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    lazy-nvim.url = "github:folke/lazy.nvim";
-    lazy-nvim.flake = false;
     pre-commit-nix.url = "github:cachix/pre-commit-hooks.nix";
   };
 
   outputs = {
+    nixpkgs,
     flake-parts,
     self,
     ...
   } @ inputs:
     flake-parts.lib.mkFlake {inherit self inputs;} {
-      imports = [
-        inputs.pre-commit-nix.flakeModule
-      ];
+      imports = nixpkgs.lib.optional (inputs.pre-commit-nix ? flakeModule) inputs.pre-commit-nix.flakeModule;
 
       flake = {
         flakeModule = {
@@ -32,41 +29,43 @@
         pkgs,
         system,
         ...
-      }: {
-        apps = {
-          check.program = pkgs.writeShellApplication {
-            name = "check";
-            text = ''
-              nix run ./example#test
+      }:
+        {
+          apps = {
+            check.program = pkgs.writeShellApplication {
+              name = "check";
+              text = ''
+                nix run ./example#test
+              '';
+            };
+            check-local.program = pkgs.writeShellApplication {
+              name = "check-local";
+              text = ''
+                nix run --override-input neovim-nix path:./. ./example#test
+              '';
+            };
+          };
+
+          formatter = pkgs.alejandra;
+
+          packages = {
+            utils = pkgs.callPackage ./utils.nix {};
+          };
+        }
+        // nixpkgs.lib.optionalAttrs (inputs.pre-commit-nix ? flakeModule) {
+          devShells.default = pkgs.mkShell {
+            name = "neovim.nix";
+            shellHook = ''
+              ${config.pre-commit.installationScript}
             '';
           };
-          check-local.program = pkgs.writeShellApplication {
-            name = "check-local";
-            text = ''
-              nix run --override-input neovim-nix path:./. ./example#test
-            '';
+
+          pre-commit = {
+            settings = {
+              hooks.alejandra.enable = true;
+              hooks.stylua.enable = true;
+            };
           };
         };
-
-        devShells.default = pkgs.mkShell {
-          name = "neovim.nix";
-          shellHook = ''
-            ${config.pre-commit.installationScript}
-          '';
-        };
-
-        formatter = pkgs.alejandra;
-
-        packages = {
-          utils = pkgs.callPackage ./utils.nix {};
-        };
-
-        pre-commit = {
-          settings = {
-            hooks.alejandra.enable = true;
-            hooks.stylua.enable = true;
-          };
-        };
-      };
     };
 }
