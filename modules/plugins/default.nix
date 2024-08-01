@@ -167,9 +167,9 @@ in {
                 in
                   attrValues deps;
               }
-              // optionalAttrs (isString attrs.init) {
-                init = lib.generators.mkLuaInline attrs.init;
-              }
+              # // optionalAttrs (isString attrs.init) {
+              #   init = lib.generators.mkLuaInline attrs.init;
+              # }
               // optionalAttrs (isDerivation attrs.init || isPath attrs.init) {
                 init = lib.generators.mkLuaInline ''dofile "${attrs.init}"'';
               }
