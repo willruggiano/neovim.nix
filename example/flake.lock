@@ -110,11 +110,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1720736405,
-        "narHash": "sha256-DTHUOKqTxeGcLAtnZZA3cOWbpGNfg2LzE1JMjOv4sn8=",
+        "lastModified": 1722480119,
+        "narHash": "sha256-iuCAGeftxAHNOtlFRGPfw8avmtqP3w2hJJTynGyIEc4=",
         "owner": "willruggiano",
         "repo": "neovim.nix",
-        "rev": "23083273ec3909d5d1bb99d2dc41c748c79d8caa",
+        "rev": "cf63e94ed10a8fcfda5a3d123edce28552214b3c",
         "type": "github"
       },
       "original": {
