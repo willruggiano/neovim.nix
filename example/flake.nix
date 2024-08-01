@@ -16,6 +16,7 @@
       systems = ["x86_64-linux"];
       perSystem = {
         config,
+        lib,
         pkgs,
         ...
       }: {
@@ -38,6 +39,11 @@
             plugins = {
               example = {
                 src = ./example;
+                init = ''
+                  function()
+                    vim.g.loaded_example_init = true
+                  end
+                '';
                 config = ./example.lua;
                 lazy = false;
                 priority = 1000;
@@ -59,16 +65,9 @@
           };
         };
 
-        packages = {
-          default = config.neovim.final;
-          test = pkgs.writeShellApplication {
-            name = "neovim-nix-spec";
-            runtimeInputs = [config.neovim.final];
-            text = ''
-              nvim --headless -c "PlenaryBustedDirectory ${./.}/spec { init = '${config.neovim.build.initlua}' }"
-            '';
-          };
-        };
+        checks = config.packages.ci;
+
+        packages.default = config.neovim.final;
       };
     };
 }
