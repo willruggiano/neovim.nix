@@ -26,6 +26,10 @@ describe("neovim", function()
         assert.is_table(require "plenary")
       end)
 
+      it("(init) configures plugins", function()
+        assert.is_true(vim.g.loaded_example_init)
+      end)
+
       it("(config) configures plugins", function()
         assert.is_true(vim.g.loaded_example)
       end)
