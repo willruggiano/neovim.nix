@@ -2,13 +2,16 @@ name: Build and test example flake
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
-  check-pr:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v25
+      - uses: cachix/install-nix-action@v27
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: nix run .#check-local
+      - run: nix flake check
