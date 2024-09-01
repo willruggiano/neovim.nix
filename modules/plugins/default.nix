@@ -211,11 +211,10 @@ in {
               // optionalAttrs (attrs.main != null) {inherit (attrs) main;}
               // optionalAttrs (attrs.priority != null) {inherit (attrs) priority;};
           in
-            lib.generators.toLua {} (cfg.settings
-              // {
-                spec = mapAttrsToList toPlugin' cfg.plugins;
-                performance.rtp.reset = false;
-              });
+            lib.generators.toLua {} (lib.recursiveUpdate cfg.settings {
+              spec = mapAttrsToList toPlugin' cfg.plugins;
+              performance.rtp.reset = false;
+            });
 
           plugins =
             pkgs.runCommand "plugins.lua" {
