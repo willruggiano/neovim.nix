@@ -45,9 +45,7 @@ in {
     }: let
       env = pkgs.buildEnv {
         name = "neovim-host-prog";
-        paths =
-          [pkgs.nodePackages.neovim]
-          ++ [(pkgs.python3.withPackages (ps: with ps; [pynvim]))];
+        paths = [pkgs.neovim-node-client] ++ [(pkgs.python3.withPackages (ps: with ps; [pynvim]))];
       };
     in {
       neovim.build = {
