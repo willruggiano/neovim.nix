@@ -47,6 +47,7 @@ in {
         name = "neovim-host-prog";
         paths = [pkgs.neovim-node-client] ++ [(pkgs.python3.withPackages (ps: with ps; [pynvim]))];
       };
+      makeLuaSearchPath = paths: concatStringsSep ";" (filter (x: x != null) paths);
     in {
       neovim.build = {
         before = pkgs.writeTextFile {
@@ -74,6 +75,7 @@ in {
             mkdir $out
             export HOME=$TMP
             export NVIM_RPLUGIN_MANIFEST=$out/rplugin.vim
+            export LUA_CPATH="$LUA_CPATH:${makeLuaSearchPath (unique config.neovim.cpaths)}"
             export PATH="$PATH:${makeBinPath (unique config.neovim.paths)}"
             nvim --headless -i NONE -n -u ${config.neovim.build.initlua} +UpdateRemotePlugins +quit!
           '';
