@@ -2,9 +2,8 @@
   description = "Example usage of willruggiano/neovim.nix";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
     neovim-nix.url = "github:willruggiano/neovim.nix";
+    nixpkgs.follows = "neovim-nix/nixpkgs";
   };
 
   outputs = {flake-parts, ...} @ inputs:
