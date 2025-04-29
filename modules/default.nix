@@ -13,6 +13,10 @@ with lib; let
   }: let
     cfg = config.neovim;
     toEnvVar = name: value: ''export ${name}="''${${name}:-${toString value}}"'';
+    sourceFile = file: ''
+      # shellcheck disable=SC1091
+      source ${file}
+    '';
     makeLuaSearchPath = paths: concatStringsSep ";" (filter (x: x != null) paths);
   in
     pkgs.writeShellApplication {
@@ -31,6 +35,7 @@ with lib; let
         ++ optional (cfg.cpaths != []) ''
           export LUA_CPATH="''${LUA_CPATH:-};${makeLuaSearchPath cfg.cpaths}"
         ''
+        ++ optionals (cfg.source != []) (map sourceFile cfg.source)
         ++ [
           ''
             export NVIM_RPLUGIN_MANIFEST="${config.neovim.build.rplugin}/rplugin.vim"
@@ -70,6 +75,11 @@ in {
             type = listOf package;
             default = [];
             description = "Additional binaries to bake into the final Neovim derivation's PATH";
+          };
+          source = mkOption {
+            type = listOf (oneOf [path str]);
+            default = [];
+            description = "Additional shell scripts to `source` in the generated wrapper script";
           };
 
           final = mkOption {
